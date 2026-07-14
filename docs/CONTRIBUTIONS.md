@@ -1,54 +1,45 @@
-# Contributions & how to credit
+# Contributions
 
-## Upstream (colibrì)
+## Upstream project (tribute)
 
-| | |
-|--|--|
-| Project | [JustVugg/colibri](https://github.com/JustVugg/colibri) |
-| What it is | Tiny C engine to run GLM-5.2 MoE locally with streaming experts |
+Everything here depends on **[colibrì](https://github.com/JustVugg/colibri)** by **JustVugg** and contributors (Apache-2.0).
 
-This notes repo does **not** replace upstream. Features should land via PRs when possible.
+I did not create colibrì. I used it, measured it on GB10, and contributed **CACHE_ROUTE**.
 
-## My work (Vincent Marquez)
+## My upstream contribution
 
-| Deliverable | Where |
-|-------------|--------|
-| CACHE_ROUTE mechanism explanation + tiered GB10 numbers | [Issue #161 comment](https://github.com/JustVugg/colibri/issues/161#issuecomment-4970926845) |
-| Routing-only **CACHE_ROUTE** PR (default off + telemetry) | [PR #199](https://github.com/JustVugg/colibri/pull/199) |
-| Lab notes, tiers, quality harness | **This repo** |
+| Item | Link |
+|------|------|
+| **PR #199** — opt-in CACHE_ROUTE (default off) | https://github.com/JustVugg/colibri/pull/199 |
+| Status | **Merged** 2026-07-14 |
+| Merge commit | `62419af1884af321458472f6927c63ab07f67427` |
+| Mechanism discussion | https://github.com/JustVugg/colibri/issues/161#issuecomment-4970926845 |
 
-### PR #199 (summary)
+### What PR #199 contains
 
-- Opt-in max-rank routing (`CACHE_ROUTE`, `ROUTE_J/M/P/ALPHA`, `ROUTE_AGREE`)
-- Footer / STAT: swap, agree, kl
-- Docs upstream: `docs/CACHE_ROUTE.md` on the PR branch
-- **Not** included: full GB10 CUDA fuse / device-tier stack (so maintainers can A/B routing vs PILOT cleanly)
+- `CACHE_ROUTE` / `ROUTE_J` / `ROUTE_M` / `ROUTE_P` / `ROUTE_ALPHA` / `ROUTE_AGREE`
+- Selection path in MoE routing (max-rank, pin∪LRU prefer)
+- Footer / STAT telemetry (`swap`, `agree`, `kl`)
+- Short upstream docs for the flags  
 
-Merge may require **maintainer approval** (branch protection) — not a sign the PR is broken.
+Routing-only; not the full GB10 CUDA stack.
 
-## Suggested citation
+## Code in *this* repo (mine)
 
-```text
-Vincent Marquez. GLM-5.2 / colibrì measurements on NVIDIA DGX Spark (GB10).
-https://github.com/VincentMarquez/glm52-gb10-colibri (2026).
-CACHE_ROUTE PR: https://github.com/JustVugg/colibri/pull/199
+| Path | Description |
+|------|-------------|
+| `scripts/quality-ab-cr.py` | Streaming SCORE A/B harness (progress, checkpoints) |
+| `scripts/quality-ab-cr.sh` | Wrapper |
+| `docs/*` | Hardware, numbers, flags, quality notes |
+| `results/*` | Frozen lab snapshots |
+
+## Engine code
+
+Prefer **upstream main** (or a release after #199) for CACHE_ROUTE:
+
+```bash
+git clone https://github.com/JustVugg/colibri.git
+# build per upstream README
 ```
 
-Paper inspiration for max-rank cache-aware routing:
-
-```text
-arXiv:2412.00099
-```
-
-## Related upstream issues (context)
-
-- Community speed / hardware rows (README + issues)
-- PILOT / prefetch discussions (e.g. cross-layer coupling #176 era)
-- Routing experiments discussion: **#161**
-
-## What I am **not** claiming
-
-- Ownership of colibrì  
-- That 6 tok/s is portable or default  
-- That CACHE_ROUTE is quality-proven at full bench scale  
-- That TOPK prune equals full top‑8 quality  
+My fork (optional, for history): https://github.com/VincentMarquez/colibri

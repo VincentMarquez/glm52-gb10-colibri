@@ -1,137 +1,137 @@
-# GLM-5.2 on NVIDIA DGX Spark (GB10) · colibrì notes
+# My GLM-5.2 work on DGX Spark (GB10)
 
-**Author:** [VincentMarquez](https://github.com/VincentMarquez)  
-**Upstream engine:** [JustVugg/colibri](https://github.com/JustVugg/colibri)  
-**Date:** 2026-07
+**Vincent Marquez** · 2026  
 
-Personal lab notes and measurements for running **GLM-5.2 (744B MoE, int4 streaming)** with **colibrì** on an **NVIDIA DGX Spark · GB10 · 121 GB unified memory**.
-
-This is **not** a fork of the whole engine. It is:
-
-- Honest **decode tok/s** numbers (full top‑8 width)
-- An experimental **CACHE_ROUTE** idea (opt‑in, default off)
-- A **routing-only PR** against upstream
-- Scripts for **quality A/B** with live progress
+Personal repo: what I ran, measured, and contributed while working with **GLM-5.2** (744B MoE) on an **NVIDIA DGX Spark · GB10 · 121 GB unified memory**.
 
 ---
 
-## Headline numbers (read the labels)
+## Tribute — colibrì by Justin (JustVugg)
 
-All numbers: **decode tok/s**, **full expert width K=8** (`TOPK` unset), same GB10 box unless noted.
+This work stands on **[colibrì](https://github.com/JustVugg/colibri)** by **[JustVugg](https://github.com/JustVugg)** and contributors.
 
-| Tier | Setup | decode tok/s | hit | notes |
-|------|--------|-------------:|----:|-------|
-| **A** | Stock routing | **~2.1–2.4** | ~82% | fair full‑k8 baseline |
-| **B** | + experimental **CACHE_ROUTE** (early stack) | **~3.33** | **97%** | ~**14%** expert swap vs true top‑8 |
-| **C** | CACHE_ROUTE + later CUDA stack (MLA / fuse / device‑tier) | **~5.1–6.2** | ~94–97% | **not CACHE_ROUTE alone** |
+colibrì is the tiny C engine that makes huge MoE models practical on a single box (streaming experts from disk, optional GPU path, great community tooling).  
 
-**Disk (iobench):** 4.25 GB/s buffered · **9.69 GB/s O_DIRECT**.
+**All credit for the core project belongs there.**  
+I am a user/contributor who measured and extended pieces of it on GB10 — not the author of colibrì.
 
-> **Do not cite “6 tok/s” without Tier C context.**  
-> The clean routing-side story is **~2.4 → 3.33** (Tier A → B).  
-> The **5–6** band needs residency + fused CUDA path **and** CACHE_ROUTE.
+| Upstream | Link |
+|----------|------|
+| Project | https://github.com/JustVugg/colibri |
+| License | **Apache License 2.0** |
+| Author | JustVugg + community |
 
-Details: [docs/NUMBERS.md](docs/NUMBERS.md) · [docs/HARDWARE.md](docs/HARDWARE.md)
-
----
-
-## What I contributed
-
-| Item | Link / status |
-|------|----------------|
-| Issue #161 discussion (mechanism + tiered numbers) | [comment](https://github.com/JustVugg/colibri/issues/161#issuecomment-4970926845) |
-| **PR: opt‑in CACHE_ROUTE** (routing-only, default off) | [JustVugg/colibri#199](https://github.com/JustVugg/colibri/pull/199) |
-| Quality A/B harness (live tok/s + partial results on stop) | [`scripts/quality-ab-cr.py`](scripts/quality-ab-cr.py) |
-
-Upstream remains Justin’s project. Credit for colibrì itself belongs to the [colibri](https://github.com/JustVugg/colibri) maintainers and community.
+Thank you, Justin and everyone who built colibrì.
 
 ---
 
-## CACHE_ROUTE in one paragraph
+## What I did
 
-Inspired by [arXiv:2412.00099](https://arxiv.org/abs/2412.00099) (max-rank style):
+| Work | Where |
+|------|--------|
+| Ran **GLM-5.2 int4** full **top-8** on GB10; measured **decode tok/s** in honest tiers | [docs/NUMBERS.md](docs/NUMBERS.md) |
+| Designed / implemented **CACHE_ROUTE** (opt-in cache-aware MoE routing, default **off**) | Merged upstream: **[PR #199](https://github.com/JustVugg/colibri/pull/199)** |
+| Explained the mechanism on the project issue | [#161 comment](https://github.com/JustVugg/colibri/issues/161#issuecomment-4970926845) |
+| Wrote a **quality A/B harness** with live progress (stop-safe) | [`scripts/quality-ab-cr.py`](scripts/quality-ab-cr.py) |
+| Documented hardware, flags, and lab results | [`docs/`](docs/) |
 
-1. Router still scores **all** experts every layer (no skip, no reuse of previous top‑k).
-2. Always take true top‑**J** (default **2**), even if cold on disk.
-3. Fill remaining slots preferring experts already **resident (pin ∪ LRU)** that still rank in top‑**M** (default **12**, also **16**).
+My **engine code contribution** lives in upstream after merge (commit `62419af` via PR #199).  
+This repo keeps **notes, scripts, and results** so others can see the GB10 story in one place.
 
-**Default: OFF.** Complementary to **PILOT** (prefetch without changing expert IDs). CACHE_ROUTE *can* change which experts run (~14–22% slot swap).
+Fork of the engine (for history / local branches): https://github.com/VincentMarquez/colibri  
 
-Flags: [docs/CACHE_ROUTE.md](docs/CACHE_ROUTE.md)
+---
+
+## Headline numbers (labeled)
+
+**Metric:** decode tok/s · **width:** full K=8 · **machine:** this GB10  
+
+| Tier | Setup | decode tok/s | notes |
+|------|--------|-------------:|-------|
+| **A** | Stock routing | **~2.1–2.4** | fair full-k8 baseline |
+| **B** | + experimental **CACHE_ROUTE** (early stack) | **~3.33** | hit ~97%, ~14% route swap |
+| **C** | CR + later CUDA stack (MLA / fuse / device-tier) | **~5.1–6.2** | **not CR alone** |
+
+Disk (iobench): **4.25 GB/s** buffered · **9.69 GB/s** O_DIRECT.
+
+Details: [docs/NUMBERS.md](docs/NUMBERS.md) · [docs/HARDWARE.md](docs/HARDWARE.md) · [docs/CACHE_ROUTE.md](docs/CACHE_ROUTE.md)
+
+---
+
+## CACHE_ROUTE (my main engine contribution)
+
+Opt-in max-rank style routing (idea related to [arXiv:2412.00099](https://arxiv.org/abs/2412.00099)):
+
+1. Router still scores all experts every layer.  
+2. Always take true top-**J** (default 2).  
+3. Fill remaining slots preferring experts already **resident** (pin ∪ LRU) within top-**M**.
 
 ```bash
-CACHE_ROUTE=0 ./coli chat
-CACHE_ROUTE=1 ROUTE_J=2 ROUTE_M=12 ./coli chat
+# default: stock routing
+CACHE_ROUTE=0
+
+# experimental
+CACHE_ROUTE=1 ROUTE_J=2 ROUTE_M=12
 ```
 
+**Default remains off** in upstream. Complementary to **PILOT** (prefetch without changing expert IDs).
+
+Shipped in: https://github.com/JustVugg/colibri/pull/199  
+
 ---
 
-## Quality (limited sample · complete)
-
-Log-likelihood SCORE harness (not chat decode). **HellaSwag n=20**, same questions both cells.
-
-| Cell | acc_norm | acc |
-|------|---------:|----:|
-| Stock `CACHE_ROUTE=0` | **80%** | 40% |
-| `CACHE_ROUTE=1` J=2 M=12 | **70%** | 35% |
-| **Delta** | **−10 pp** | −5 pp |
-
-Small *n* — **leading indicator only**. Supports keeping CACHE_ROUTE **opt-in / never default** until larger benches.  
-Details: [docs/QUALITY.md](docs/QUALITY.md) · [results/COMPARE.txt](results/COMPARE.txt)
+## Scripts in this repo
 
 ```bash
-# live progress; Ctrl-C keeps partial results
+# Quality A/B harness (live req/s · ~tok/s · running accuracy; Ctrl-C keeps partial results)
+export COLI_MODEL=/path/to/glm52-colibri-int4
+export GLM_BIN=/path/to/colibri/c/glm
+export BENCH_DATA=/path/to/colibri/c/bench
+
 ./scripts/quality-ab-cr.sh --limit 20 --tasks hellaswag
-tail -f ~/quality-ab-cr/latest/cr_off/STATUS.txt
 ```
+
+See [scripts/README.md](scripts/README.md) and [docs/QUALITY.md](docs/QUALITY.md).
 
 ---
 
-## Hardware (short)
-
-| | |
-|--|--|
-| Machine | NVIDIA **DGX Spark** (`NVIDIA_DGX_Spark`) |
-| GPU / mem | **GB10** · **121 GB** unified |
-| CPU | 20× Arm (10× X925 + 10× A725) |
-| OS | Ubuntu 24.04 · Linux aarch64 |
-
-Full sheet: [docs/HARDWARE.md](docs/HARDWARE.md)
-
----
-
-## Repo map
+## Repo layout
 
 ```
-README.md                 ← you are here
+README.md              ← you are here (tribute + my work)
+NOTICE                 ← Apache attribution for upstream
 docs/HARDWARE.md
-docs/NUMBERS.md           ← full tier tables + caveats
-docs/CACHE_ROUTE.md       ← mechanism + env flags
-docs/QUALITY.md           ← quality protocol + results
-docs/CONTRIBUTIONS.md     ← PR/issue links, how to cite
-scripts/quality-ab-cr.py  ← streaming SCORE A/B
+docs/NUMBERS.md
+docs/CACHE_ROUTE.md
+docs/QUALITY.md
+docs/CONTRIBUTIONS.md
+scripts/quality-ab-cr.py   ← my harness code
 scripts/quality-ab-cr.sh
-results/                  ← frozen snapshots
+results/                   ← lab snapshots
 ```
-
----
-
-## How to cite / give credit
-
-If these numbers or CACHE_ROUTE help you:
-
-```text
-Vincent Marquez — GLM-5.2 / colibrì notes on DGX Spark (GB10)
-https://github.com/VincentMarquez/glm52-gb10-colibri
-PR: https://github.com/JustVugg/colibri/pull/199
-```
-
-Please also credit **colibrì**: https://github.com/JustVugg/colibri  
-Paper idea: arXiv:2412.00099
 
 ---
 
 ## License
 
-Notes and scripts in this repo: [MIT](LICENSE).  
-colibrì engine code remains under its own upstream license.
+| Content | License |
+|---------|---------|
+| **colibrì engine** (upstream / my PR into it) | **Apache-2.0** — see [JustVugg/colibri](https://github.com/JustVugg/colibri) |
+| **Scripts & notes in this repo** (authored by me) | **MIT** — [LICENSE](LICENSE) |
+
+When you use the engine, follow Apache-2.0 and credit **colibrì / JustVugg**.
+
+---
+
+## How to cite
+
+```text
+Vincent Marquez — GLM-5.2 lab work on NVIDIA DGX Spark (GB10), 2026
+https://github.com/VincentMarquez/glm52-gb10-colibri
+
+Built with colibrì by JustVugg:
+https://github.com/JustVugg/colibri
+
+CACHE_ROUTE contribution:
+https://github.com/JustVugg/colibri/pull/199
+```

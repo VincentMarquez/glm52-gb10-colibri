@@ -1,0 +1,22 @@
+colibrì (upstream engine)
+=========================
+
+This repository documents work built with and contributed to:
+
+  colibrì
+  https://github.com/JustVugg/colibri
+
+Copyright of the colibrì project belongs to JustVugg and its contributors.
+The engine is licensed under the Apache License, Version 2.0.
+
+You can obtain a copy of the License at:
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+My CACHE_ROUTE change was submitted and merged as:
+
+  https://github.com/JustVugg/colibri/pull/199
+  merge commit: 62419af1884af321458472f6927c63ab07f67427
+
+Lab notes and scripts in this repository are separate works by Vincent Marquez
+(see LICENSE for MIT terms on those files).
