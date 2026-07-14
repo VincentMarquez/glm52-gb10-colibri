@@ -1,0 +1,11 @@
+=== CACHE_ROUTE quality A/B ===
+dir: /path/to/home/quality-ab-cr/20260714_184902
+
+cr_off: 80/80 req | 0.03 req/s | ~2.5 tok/s | DONE
+  hellaswag: n=20 acc=40.0% acc_norm=80.0%
+
+cr_on: 80/80 req | 0.03 req/s | ~2.8 tok/s | DONE
+  hellaswag: n=20 acc=35.0% acc_norm=70.0%
+
+Delta (on - off) where both have the task:
+  hellaswag: acc_norm -10.0 pp (off 80.0% n=20 → on 70.0% n=20)

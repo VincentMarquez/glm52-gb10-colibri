@@ -1,0 +1,36 @@
+{
+  "label": "cr_on",
+  "finished": true,
+  "stopped_early": false,
+  "n_done": 80,
+  "n_total": 80,
+  "tokens_done": 7099,
+  "wall_s": 2567.3224992752075,
+  "req_per_s": 0.031160868968579197,
+  "tok_per_s": 2.7651376100992966,
+  "running_acc": {
+    "hellaswag": {
+      "n": 20,
+      "acc_pct": 35.0,
+      "acc_norm_pct": 70.0
+    }
+  },
+  "env": {
+    "CACHE_ROUTE": "1",
+    "ROUTE_J": "2",
+    "ROUTE_M": "12",
+    "ROUTE_AGREE": "1"
+  },
+  "stderr_tail": [
+    "[prefill] layer 49/78 \u00b7 103 token",
+    "[prefill] layer 53/78 \u00b7 103 token",
+    "[prefill] layer 57/78 \u00b7 103 token",
+    "[prefill] layer 61/78 \u00b7 103 token",
+    "[prefill] layer 65/78 \u00b7 103 token",
+    "[prefill] layer 69/78 \u00b7 103 token",
+    "[prefill] layer 73/78 \u00b7 103 token",
+    "[prefill] layer 77/78 \u00b7 103 token",
+    "[prefill] layer 78/78 \u00b7 103 token",
+    "[score 80 req | 2543.2s | RSS 95.72 GB | hit 32%]"
+  ]
+}

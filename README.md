@@ -66,17 +66,18 @@ CACHE_ROUTE=1 ROUTE_J=2 ROUTE_M=12 ./coli chat
 
 ---
 
-## Quality (limited sample)
+## Quality (limited sample · complete)
 
-Log-likelihood SCORE harness (not chat decode). HellaSwag subset, n=20 questions.
+Log-likelihood SCORE harness (not chat decode). **HellaSwag n=20**, same questions both cells.
 
-| Cell | Status | acc_norm |
-|------|--------|----------|
-| Stock (`CACHE_ROUTE=0`) | **complete** | **80%** (n=20) |
-| CACHE_ROUTE on | in progress / see snapshot | TBD vs stock |
+| Cell | acc_norm | acc |
+|------|---------:|----:|
+| Stock `CACHE_ROUTE=0` | **80%** | 40% |
+| `CACHE_ROUTE=1` J=2 M=12 | **70%** | 35% |
+| **Delta** | **−10 pp** | −5 pp |
 
-Raw `acc` on HellaSwag is noisy; harness prefers **acc_norm**. Small *n* — not a full `./coli bench` gate.  
-Snapshot: [results/quality_ab_snapshot.json](results/quality_ab_snapshot.json) · notes: [docs/QUALITY.md](docs/QUALITY.md)
+Small *n* — **leading indicator only**. Supports keeping CACHE_ROUTE **opt-in / never default** until larger benches.  
+Details: [docs/QUALITY.md](docs/QUALITY.md) · [results/COMPARE.txt](results/COMPARE.txt)
 
 ```bash
 # live progress; Ctrl-C keeps partial results

@@ -31,42 +31,34 @@ Artifacts (default): `~/quality-ab-cr/latest/`
 
 Stop anytime (`Ctrl-C` / kill harness). Partial results remain.
 
-## Results snapshot (HellaSwag, n=20, seed=1234)
+## Results — HellaSwag n=20 (seed=1234) · COMPLETE
 
-Captured during the first full A/B campaign (see `results/quality_ab_snapshot.json` for timestamps).
+Same 20 questions, same request file, full K=8 SCORE mode.
 
-### Stock — `CACHE_ROUTE=0` (complete)
+| Cell | Options | Wall | acc | **acc_norm** |
+|------|--------:|-----:|----:|-------------:|
+| **Stock** `CACHE_ROUTE=0` | 80/80 | ~47 min | 40% | **80%** |
+| **CACHE_ROUTE=1** J=2 M=12 | 80/80 | ~47 min | 35% | **70%** |
+| **Delta (on − off)** | | | −5 pp | **−10 pp** |
 
-| | |
-|--|--|
-| Options scored | **80 / 80** |
-| Wall | ~47 min (~2.5 SCORE “tok/s” — full forwards, not chat decode) |
-| **acc** | **40%** (8/20) |
-| **acc_norm** | **80%** (16/20) |
+Files:
 
-Raw HellaSwag accuracy often looks weak without length normalization; the harness standard is **acc_norm**.
+- [results/COMPARE.txt](../results/COMPARE.txt)
+- [results/quality_ab_snapshot.json](../results/quality_ab_snapshot.json)
+- [results/cr_off_SUMMARY.json](../results/cr_off_SUMMARY.json)
+- [results/cr_on_SUMMARY.json](../results/cr_on_SUMMARY.json)
 
-### CACHE_ROUTE=1 (partial during first capture)
-
-Early mid-run sample was small (*n* &lt; 20). **Do not conclude** CR quality until `cr_on` finishes the same 20 questions and `COMPARE.txt` is written.
-
-Re-run or refresh:
-
-```bash
-# after a finished dual run
-cat ~/quality-ab-cr/latest/COMPARE.txt
-cp ~/quality-ab-cr/latest/COMPARE.txt results/
-```
-
-## Interpretation guardrails
+### How to read this
 
 | OK to say | Not OK to say |
 |-----------|----------------|
-| “On n=20 HellaSwag SCORE, stock acc_norm was 80%” | “Quality-free / matches published GLM HellaSwag” |
-| “CR A/B still running / delta = X on n=20” | “Full MMLU proven” |
-| “Experimental; default remains off” | “Safe to default CACHE_ROUTE=1” |
+| “On n=20 HellaSwag SCORE, CR was ~10 pp lower acc_norm” | “CR destroys quality” / “quality free” |
+| “Supports keeping CR **opt-in / never default** until larger benches” | “Full MMLU / published HellaSwag proven” |
+| “Stock int4 SCORE looks ~80% acc_norm on this tiny slice” | “Matches model-card HellaSwag” |
 
-Full gate remains: larger `./coli bench` limits (hellaswag + arc + mmlu) when idle.
+**n=20 is noisy** (± a few questions moves % a lot). Treat as a **leading indicator**, not a gate to ship as default.
+
+Next step when idle: larger `./coli bench` (`hellaswag,arc_challenge,mmlu` with higher `--limit`).
 
 ## Requirements
 

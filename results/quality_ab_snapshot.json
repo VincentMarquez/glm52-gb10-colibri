@@ -1,53 +1,78 @@
 {
-  "captured_at": "2026-07-14T19:54:53.896198+00:00",
-  "note": "Snapshot mid-run if cr_on incomplete",
+  "captured_at": "2026-07-14T21:36:20.850844+00:00",
+  "task": "hellaswag",
+  "n_questions": 20,
+  "seed": 1234,
+  "protocol": "SCORE log-likelihood, full K=8, same request file both cells",
   "cr_off": {
-    "summary": {
-      "label": "cr_off",
-      "finished": true,
-      "stopped_early": false,
-      "n_done": 80,
-      "n_total": 80,
-      "tokens_done": 7099,
-      "wall_s": 2818.104671239853,
-      "req_per_s": 0.028387873884330637,
-      "tok_per_s": 2.51906895881079,
-      "running_acc": {
-        "hellaswag": {
-          "n": 20,
-          "acc_pct": 40.0,
-          "acc_norm_pct": 80.0
-        }
-      },
-      "env": {
-        "CACHE_ROUTE": "0"
-      },
-      "stderr_tail": [
-        "[prefill] layer 49/78 \u00b7 103 token",
-        "[prefill] layer 53/78 \u00b7 103 token",
-        "[prefill] layer 57/78 \u00b7 103 token",
-        "[prefill] layer 61/78 \u00b7 103 token",
-        "[prefill] layer 65/78 \u00b7 103 token",
-        "[prefill] layer 69/78 \u00b7 103 token",
-        "[prefill] layer 73/78 \u00b7 103 token",
-        "[prefill] layer 77/78 \u00b7 103 token",
-        "[prefill] layer 78/78 \u00b7 103 token",
-        "[score 80 req | 2793.5s | RSS 94.30 GB | hit 24%]"
-      ]
+    "label": "cr_off",
+    "finished": true,
+    "stopped_early": false,
+    "n_done": 80,
+    "n_total": 80,
+    "tokens_done": 7099,
+    "wall_s": 2818.104671239853,
+    "req_per_s": 0.028387873884330637,
+    "tok_per_s": 2.51906895881079,
+    "running_acc": {
+      "hellaswag": {
+        "n": 20,
+        "acc_pct": 40.0,
+        "acc_norm_pct": 80.0
+      }
     },
-    "status_tail": [
-      "done: 80/80 requests (COMPLETE)",
-      "wall: 2818.1s | 0.03 req/s | ~2.5 tok/s",
-      "tokens processed: 7099",
-      "hellaswag n=20 acc=40% acc_norm=80%",
-      "files: /path/to/home/quality-ab-cr/20260714_184902/cr_off"
-    ],
-    "n_progress": 80
+    "env": {
+      "CACHE_ROUTE": "0"
+    },
+    "stderr_tail": [
+      "[prefill] layer 49/78 \u00b7 103 token",
+      "[prefill] layer 53/78 \u00b7 103 token",
+      "[prefill] layer 57/78 \u00b7 103 token",
+      "[prefill] layer 61/78 \u00b7 103 token",
+      "[prefill] layer 65/78 \u00b7 103 token",
+      "[prefill] layer 69/78 \u00b7 103 token",
+      "[prefill] layer 73/78 \u00b7 103 token",
+      "[prefill] layer 77/78 \u00b7 103 token",
+      "[prefill] layer 78/78 \u00b7 103 token",
+      "[score 80 req | 2793.5s | RSS 94.30 GB | hit 24%]"
+    ]
   },
   "cr_on": {
-    "status_tail": [
-      "[cr_on] req 38/80 (48%) | 0.03 req/s | ~2.5 tok/s | tokens 2719 | wall 1096s | complete_q=9 | hellaswag n=9 acc=22% acc_norm=67%"
-    ],
-    "n_progress": 38
-  }
+    "label": "cr_on",
+    "finished": true,
+    "stopped_early": false,
+    "n_done": 80,
+    "n_total": 80,
+    "tokens_done": 7099,
+    "wall_s": 2567.3224992752075,
+    "req_per_s": 0.031160868968579197,
+    "tok_per_s": 2.7651376100992966,
+    "running_acc": {
+      "hellaswag": {
+        "n": 20,
+        "acc_pct": 35.0,
+        "acc_norm_pct": 70.0
+      }
+    },
+    "env": {
+      "CACHE_ROUTE": "1",
+      "ROUTE_J": "2",
+      "ROUTE_M": "12",
+      "ROUTE_AGREE": "1"
+    },
+    "stderr_tail": [
+      "[prefill] layer 49/78 \u00b7 103 token",
+      "[prefill] layer 53/78 \u00b7 103 token",
+      "[prefill] layer 57/78 \u00b7 103 token",
+      "[prefill] layer 61/78 \u00b7 103 token",
+      "[prefill] layer 65/78 \u00b7 103 token",
+      "[prefill] layer 69/78 \u00b7 103 token",
+      "[prefill] layer 73/78 \u00b7 103 token",
+      "[prefill] layer 77/78 \u00b7 103 token",
+      "[prefill] layer 78/78 \u00b7 103 token",
+      "[score 80 req | 2543.2s | RSS 95.72 GB | hit 32%]"
+    ]
+  },
+  "delta_acc_norm_pp": -10.0,
+  "caveat": "n=20 only; not full coli bench. Prefer acc_norm. Do not default CACHE_ROUTE from this alone."
 }
