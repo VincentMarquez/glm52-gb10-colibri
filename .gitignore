@@ -1,0 +1,13 @@
+# local model / huge artifacts
+*.safetensors
+*.bin
+*.gguf
+.coli_usage
+.coli_kv
+
+# run outputs (keep committed snapshots under results/ only if small)
+/quality-runs/
+*.log
+__pycache__/
+.venv/
+mio_env/
