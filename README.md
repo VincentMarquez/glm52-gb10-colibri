@@ -1,4 +1,4 @@
-# My GLM-5.2 work on DGX Spark (GB10)
+# My GLM-5.2 work on 1 DGX Spark (GB10)
 
 **Vincent Marquez** · 2026  
 
