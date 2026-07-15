@@ -18,12 +18,31 @@
 
 `c/iobench` · 19 MB × 64 reads · 8 threads · shard e.g. `out-00099.safetensors`:
 
-| Mode | GB/s |
-|------|-----:|
-| Buffered | **4.25** |
-| **O_DIRECT** | **9.69** |
+| Mode | GB/s | Ratio |
+|------|-----:|------:|
+| Buffered (page cache) | **4.25** | 1.0× |
+| **`DIRECT=1` / O_DIRECT** | **9.69** | **2.3×** |
 
-Community rows often list both. O_DIRECT is the fairer “true disk” number when page cache is huge.
+### Flag this louder: `DIRECT=1` on real NVMe
+
+On this DGX Spark local NVMe, **O_DIRECT is a striking ~2.3×** over buffered reads. That matches a page-cache **double-buffering tax** on a fast drive: buffered I/O copies through the page cache; O_DIRECT feeds the engine closer to wire speed.
+
+```bash
+# Fair “true disk” number for community tables
+./iobench /path/to/shard.safetensors 19 64 8 1   # last 1 = O_DIRECT
+
+# Runtime (native Linux + real NVMe): prefer
+DIRECT=1 ./coli …
+```
+
+**Per-tier lever (not universal):**
+
+| Storage | What we see | Guidance |
+|---------|-------------|---------|
+| **Fast local NVMe** (this box) | 4.25 → **9.69 GB/s** | **`DIRECT=1` worth defaulting** for decode |
+| Slow / VHDX-backed WSL disks | often ~0.2–1 GB/s class, disk-bound first | O_DIRECT may not move the needle; measure both |
+
+Always publish **both** buffered and O_DIRECT iobench numbers so rows stay comparable.
 
 ## Model (as measured)
 

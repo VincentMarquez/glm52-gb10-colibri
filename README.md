@@ -52,7 +52,9 @@ Fork of the engine (for history / local branches): https://github.com/VincentMar
 | **B** | + experimental **CACHE_ROUTE** (early stack) | **~3.33** | hit ~97%, ~14% route swap |
 | **C** | CR + later CUDA stack (MLA / fuse / device-tier) | **~5.1–6.2** | **not CR alone** |
 
-Disk (iobench): **4.25 GB/s** buffered · **9.69 GB/s** O_DIRECT.
+**Disk (flag loudly on NVMe):** iobench **4.25 GB/s** buffered → **9.69 GB/s O_DIRECT** (**2.3×**).  
+On a real NVMe that is the page-cache tax; use **`DIRECT=1`** for fair decode runs.  
+On slow/VHDX-backed disks O_DIRECT is a weaker lever — measure both (see [docs/HARDWARE.md](docs/HARDWARE.md)).
 
 Details: [docs/NUMBERS.md](docs/NUMBERS.md) · [docs/HARDWARE.md](docs/HARDWARE.md) · [docs/CACHE_ROUTE.md](docs/CACHE_ROUTE.md)
 
