@@ -30,6 +30,32 @@ Only **2 questions** flipped stock-correct → CR-wrong; **85%** same normalized
 
 Artifacts: [results/COMPARE.txt](../results/COMPARE.txt), [results/quality_ab_snapshot.json](../results/quality_ab_snapshot.json).
 
+## Independent reproduction — x86 dual 5090 (community)
+
+Same idea reimplemented from the public description (not a GB10-only quirk).  
+Box: Ryzen 9 9950X3D2 · dual RTX 5090 · Gen5 NVMe · PCIe (no unified memory).  
+Reported in [Discussions #208](https://github.com/JustVugg/colibri/discussions/208) / trail #120→#215.
+
+| Config | tok/s (1024-tok window) | hit | substitution |
+|--------|------------------------:|----:|-------------:|
+| true top-8 | **2.2554** | 79% | — |
+| `ROUTE_J=2` `ROUTE_M=12` | **3.09 / 3.04** | 92% | **15.3%** |
+
+Speed: **+42%** there vs **~+39%** on GB10 (2.39 → 3.33) — consistent across architectures.  
+Substitution **15.3%** vs our **~14%** — reproduces.
+
+### Quality — MMLU-200 (same build, same seeds, clean learned-cache both cells)
+
+| Cell | MMLU-200 |
+|------|---------:|
+| true routing | **59.0%** |
+| `ROUTE_J=2` `ROUTE_M=12` | **62.0%** |
+
+**Honest read:** binomial noise at n=200 is ~±3.5 pp → **no detectable difference**, not “substitution helps.”  
+That is already much stronger than primes eyeball: **~15% expert substitution did not measurably dent MMLU** on this gate. Full bench / `--limit 1000` still welcome.
+
+Discipline: these rows stay **off the main true-routing table** (research / experimental flag only).
+
 ## Interpretation (vs EXPERT_BUDGET)
 
 - **EXPERT_BUDGET** (blind drop by gate weight) can speed up but **cliffs** coherence on reasoning prompts.

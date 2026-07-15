@@ -34,6 +34,8 @@ Context: public community full-quality peaks on other machines were often **~0.4
 
 **Routing-side jump people care about:** ~**2.4 → 3.33**.
 
+**Independent x86 repro** (dual 5090 / Gen5, PCIe, not unified memory): true top-8 **2.255** → J2 M12 **3.09** (+42%), hit 92%, swap **15.3%** — matches the GB10 delta and swap rate. Quality: MMLU-200 59% vs 62% (noise; **no detectable difference**). See [QUALITY.md](QUALITY.md). **Not** a main-table row.
+
 Example footer (Tier B peak):
 
 ```text

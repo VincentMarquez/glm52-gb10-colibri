@@ -80,6 +80,8 @@ CACHE_ROUTE=1 ROUTE_J=2 ROUTE_M=12
 
 Shipped in: https://github.com/JustVugg/colibri/pull/199  
 
+**Independent repro (x86 dual 5090):** +42% decode (2.26 → 3.09), ~15% substitution, MMLU-200 **indistinguishable** at n=200 noise — see [docs/QUALITY.md](docs/QUALITY.md). Keep off the main leaderboard table.  
+
 ---
 
 ## Scripts in this repo
