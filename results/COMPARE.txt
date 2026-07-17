@@ -1,5 +1,5 @@
 === CACHE_ROUTE quality A/B ===
-dir: /path/to/home/quality-ab-cr/20260714_184902
+dir: /path/to/quality-ab-cr/20260714_184902
 
 cr_off: 80/80 req | 0.03 req/s | ~2.5 tok/s | DONE
   hellaswag: n=20 acc=40.0% acc_norm=80.0%
