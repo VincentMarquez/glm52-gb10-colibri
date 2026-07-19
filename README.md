@@ -2,6 +2,7 @@
 
 **Vincent Marquez** · 2026  
 
+> **9.5 tok/s peak** on one NVIDIA DGX Spark at full top-8 (K=8), with **~8.5–8.6 tok/s overall decode** on the best run.
 Personal repo: what I ran, measured, and contributed while working with **GLM-5.2** (744B MoE) on an **NVIDIA DGX Spark · GB10 · 121 GB unified memory**.
 
 ---
@@ -42,21 +43,49 @@ Fork of the engine (for history / local branches): https://github.com/VincentMar
 
 ---
 
-## Headline numbers (labeled)
+## Update — DGX Spark (GB10) full top-8 campaign toward **30 tok/s**
 
-**Metric:** decode tok/s · **width:** full K=8 · **machine:** this GB10  
+Still on the same box: **NVIDIA DGX Spark · GB10 · 121 GB UMA · aarch64 · local int4 + int8 MTP**.  
+Goal for this thread remains **30 decode tok/s at full top-8 quality** (no `TOPK` prune).  
+We have **not** hit 30 yet; this is a progress report + open work, not a leaderboard claim of 30.
 
-| Tier | Setup | decode tok/s | notes |
-|------|--------|-------------:|-------|
-| **A** | Stock routing | **~2.1–2.4** | fair full-k8 baseline |
-| **B** | + experimental **CACHE_ROUTE** (early stack) | **~3.33** | hit ~97%, ~14% route swap |
-| **C** | CR + later CUDA stack (MLA / fuse / device-tier) | **~5.1–6.2** | **not CR alone** |
+### Headline numbers (timed `./glm`, full K=8, `TEMP=0`)
 
-**Disk (flag loudly on NVMe):** iobench **4.25 GB/s** buffered → **9.69 GB/s O_DIRECT** (**2.3×**).  
-On a real NVMe that is the page-cache tax; use **`DIRECT=1`** for fair decode runs.  
-On slow/VHDX-backed disks O_DIRECT is a weaker lever — measure both (see [docs/HARDWARE.md](docs/HARDWARE.md)).
+| tier | mid `[t=16]` | overall decode | tok/fw | notes |
+|------|--------------|----------------|--------|-------|
+| **S=1 fuse, full k8 + CR** | **~6.7–7.3** | **~6.5–6.9** | 1.0 | hot experts (~99% hit), short-context warm |
+| **Multi-S + free PLD + CR** | **~9.5 peak** | **~8.5–8.6 peak** | up to **~4.0** | best full-k8 e2e so far (high variance) |
+| S=1 TOPK=1 (quality reduced) | ~14 | ~13 | 1.0 | ceiling check only — **not** full-k8 |
 
-Details: [docs/NUMBERS.md](docs/NUMBERS.md) · [docs/HARDWARE.md](docs/HARDWARE.md) · [docs/CACHE_ROUTE.md](docs/CACHE_ROUTE.md)
+Earlier public points on this issue (~2.4 full / ~3.3 CACHE_ROUTE chat) are superseded on the **timed decode** path by the fused S=1 + residency stack.  
+Chat vs timed still differ; we keep reporting **decode tok/s** from the timed window after warm.
+
+### What we implemented / measured (local C engine work)
+
+All of this is still **experimental / local** relative to stock upstream unless noted — not claiming a merged PR here:
+
+- **Device-resident S=1 fused decode** (`CUDA_FUSE` + managed KV + GPU MLA): attention/experts stay on the UMA path; PROFILE still folds some expert drain into the attention bucket.
+- **Multi-S verify path (S=2..4)** for MTP/PLD: batch MLA + device routers + per-row FusedMoe (or opt-in union). Residual-on-GPU path is required; residual D2H every layer was a multi-S e2e killer.
+- **CACHE_ROUTE** still the residency lever (J/M/α cells). Sacred / no-swap modes preserve logits better for accept but thrash more without CR fill.
+- **Free drafts first**: PLD / n-gram (`PLD_FIRST` / `FORCE_PLD`) before the MTP head — on list-like prompts this is what drove **tok/fw ≈ 3–4** when it hit.
+- **Warm n-gram corpus** after `WARM_RESET_KV` (keep warm tokens for PLD without long KV) — works as plumbing; accept after reset is still weaker than long-context PLD.
+- **MoE-Spec-style `EXPERT_BUDGET`**, **MTP_MARGIN** early-stop, **adaptive draft depth**, **MTP_DRAFT_TOPK**, **DRAFT capped at 3** under multi-S fuse (S≤4).
+- **Physics takeaway on this silicon:** full-k8 S=1 is roughly a **~7 tok/s** wall (MLA bandwidth + top-8 experts). 30 needs multi-S verify cost **≲ ~1.1× S=1** with sustained **AL ≳ 4**, or a much faster S=1 baseline. Today best net is **~8.5–9.5** when PLD multi-S pays — about **~3× short of 30**.
+
+### Still working on (toward 30 full-k8)
+
+1. **Cheaper multi-S verify** — expert path still too heavy vs S=1 (shared CUDA expert scratch forces serial S positions; true multi-stream needs per-stream scratch).
+2. **Sustained high AL without long-context tax** — long warm KV helps PLD (AL up to ~4) but inflates attention; short-ctx + corpus is not yet a net win.
+3. **MTP accept vs draft cost** — full-k8 MTP can accept well but draft “other” can erase the win; free PLD is the reliable multi-S fuel so far.
+4. **Honest quality separation** — full top-8 vs CACHE_ROUTE swap% vs TOPK=1 ceiling will stay labeled separately (same discipline as the original #161 two-tier report).
+
+### Goal (unchanged)
+
+> **30 decode tok/s on full top-8 (K=8)** on this GB10 / 121 GB UMA host, without silently collapsing to TOPK=1.
+
+Happy to take protocol notes if the project wants a standard “Spark full-k8 timed” row for the community table. More numbers as the multi-S cost comes down.
+
+— continuing on the local C stack; no claim that 30 is done.
 
 ---
 
