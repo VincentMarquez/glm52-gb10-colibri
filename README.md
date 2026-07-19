@@ -1,9 +1,18 @@
-# My GLM-5.2 work on 1 DGX Spark (GB10)
+# 9.5 tok/s Peak — GLM-5.2 on One NVIDIA DGX Spark (Full Top-8 MoE)
 
-**Vincent Marquez** · 2026  
+![Peak decode](https://img.shields.io/badge/peak_decode-9.5_tok%2Fs-brightgreen)
+![Overall decode](https://img.shields.io/badge/overall_decode-8.5%E2%80%938.6_tok%2Fs-success)
+![Full top-8](https://img.shields.io/badge/MoE-full_top--8-blue)
+![NVIDIA DGX Spark](https://img.shields.io/badge/hardware-1x_NVIDIA_DGX_Spark-76B900?logo=nvidia&logoColor=white)
+![GB10](https://img.shields.io/badge/GB10-121_GB_unified_memory-5C2D91)
 
-> **9.5 tok/s peak** on one NVIDIA DGX Spark at full top-8 (K=8), with **~8.5–8.6 tok/s overall decode** on the best run.
-Personal repo: what I ran, measured, and contributed while working with **GLM-5.2** (744B MoE) on an **NVIDIA DGX Spark · GB10 · 121 GB unified memory**.
+**Vincent Marquez** · 2026
+
+> **Measured result:** **9.5 decode tok/s peak** in the timed window and **~8.5–8.6 tok/s overall decode** on the best run—on **one NVIDIA DGX Spark**, at **full top-8 (K=8) MoE quality**. No `TOPK=1` shortcut.
+
+A single-machine **GLM-5.2 744B MoE inference** campaign on **NVIDIA DGX Spark** (**GB10 / Grace Blackwell · 121 GB unified memory · aarch64**) using **CUDA fused decode, multi-token prediction (MTP), prompt lookup decoding (PLD), speculative verification, managed KV, and CACHE_ROUTE expert residency**.
+
+This repository is the reproducible performance record: benchmark numbers, experimental engine notes, scripts, quality controls, and the upstream **colibrì CACHE_ROUTE PR #199** behind the climb from roughly **2.4 tok/s to a 9.5 tok/s peak**. The ongoing target is **30 tok/s without reducing full top-8 quality**.
 
 ---
 
@@ -30,7 +39,7 @@ Thank you, Justin and everyone who built colibrì.
 
 | Work | Where |
 |------|--------|
-| Ran **GLM-5.2 int4** full **top-8** on GB10; measured **decode tok/s** in honest tiers | [docs/NUMBERS.md](docs/NUMBERS.md) |
+| Reached **9.5 decode tok/s peak** running **GLM-5.2 int4** at full **top-8** on one GB10; reported peak and overall decode separately | [docs/NUMBERS.md](docs/NUMBERS.md) |
 | Designed / implemented **CACHE_ROUTE** (opt-in cache-aware MoE routing, default **off**) | Merged upstream: **[PR #199](https://github.com/JustVugg/colibri/pull/199)** |
 | Explained the mechanism on the project issue | [#161 comment](https://github.com/JustVugg/colibri/issues/161#issuecomment-4970926845) |
 | Wrote a **quality A/B harness** with live progress (stop-safe) | [`scripts/quality-ab-cr.py`](scripts/quality-ab-cr.py) |
@@ -43,7 +52,7 @@ Fork of the engine (for history / local branches): https://github.com/VincentMar
 
 ---
 
-## Update — DGX Spark (GB10) full top-8 campaign toward **30 tok/s**
+## Benchmark result — **9.5 tok/s peak**, full top-8 on DGX Spark
 
 Still on the same box: **NVIDIA DGX Spark · GB10 · 121 GB UMA · aarch64 · local int4 + int8 MTP**.  
 Goal for this thread remains **30 decode tok/s at full top-8 quality** (no `TOPK` prune).  
