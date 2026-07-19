@@ -1,11 +1,26 @@
-# Measured numbers (honest tiers)
+# GLM-5.2 on NVIDIA DGX Spark — **9.5 tok/s Peak** (Full Top-8)
 
 **Metric:** **decode tok/s** from the engine stats line (generation window only).  
 **Not** overall wall tok/s (includes prefill / turn overhead).  
 **Width:** full **K=8** unless noted.  
-**Host:** NVIDIA DGX Spark · GB10 · 121 GB unified · disk **9.69 GB/s** O_DIRECT.
+**Host:** one NVIDIA DGX Spark · GB10 / Grace Blackwell · 121 GB unified memory · aarch64 · disk **9.69 GB/s** O_DIRECT.
+
+## Current best — multi-S + free PLD + CACHE_ROUTE
+
+| timed result | decode tok/s | tok/fw | quality / protocol |
+|--------------|-------------:|-------:|--------------------|
+| Mid-window `[t=16]` peak | **~9.5** | up to **~4.0** | full K=8 · `TEMP=0` · warm timed path |
+| Best overall decode | **~8.5–8.6** | up to **~4.0** | full K=8 · high run-to-run variance |
+| S=1 fused baseline | **~6.5–6.9** overall | 1.0 | full K=8 · hot experts ~99% hit |
+| TOPK=1 ceiling check | ~13 overall | 1.0 | **quality reduced; not full top-8** |
+
+**Headline:** the same single DGX Spark progressed from roughly **2.4 tok/s stock** to a **9.5 tok/s timed-window peak** while retaining full top-8 routing. The best overall decode result is **~8.5–8.6 tok/s**; both figures are reported so the peak is not confused with sustained overall throughput.
+
+The 9.5 path combines device-resident fused S=1 decode, multi-S verification, free prompt lookup decoding (PLD), managed KV/GPU MLA, and CACHE_ROUTE residency. It is an experimental local stack—not a claim that stock upstream or CACHE_ROUTE alone delivers 9.5 tok/s.
 
 ---
+
+## Historical progression
 
 ## Tier A — stock routing (CACHE_ROUTE off)
 
@@ -74,7 +89,7 @@ Same host, still full K=8. On top of CACHE_ROUTE: local **GPU MLA (D3)**, **fuse
 
 | Trap | Why it’s wrong |
 |------|----------------|
-| **TOPK=1** ~4.22 tok/s as “full quality” | Pruned routing — quality trade |
+| **TOPK=1** ~13 tok/s overall as “full quality” | Pruned routing ceiling check — quality trade, not full K=8 |
 | **6 tok/s = CACHE_ROUTE alone** | Needs Tier C CUDA/residency stack |
 | **Overall** wall tok/s | Includes prefill; not the ranking metric |
 | **Default CR** | Experimental; quality gates still limited |
