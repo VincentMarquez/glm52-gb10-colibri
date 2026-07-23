@@ -1,125 +1,90 @@
-# GLM-5.2 on NVIDIA DGX Spark — **9.5 tok/s Peak** (Full Top-8)
+# GLM-5.2 on NVIDIA DGX Spark — **11.1+ tok/s overall** (Full Top-8)
 
 **Metric:** **decode tok/s** from the engine stats line (generation window only).  
 **Not** overall wall tok/s (includes prefill / turn overhead).  
 **Width:** full **K=8** unless noted.  
-**Host:** one NVIDIA DGX Spark · GB10 / Grace Blackwell · 121 GB unified memory · aarch64 · disk **9.69 GB/s** O_DIRECT.
+**Host:** one NVIDIA DGX Spark · GB10 / Grace Blackwell · 121 GB unified memory · aarch64 · disk **9.69 GB/s** O_DIRECT.
 
-## Current best — multi-S + free PLD + CACHE_ROUTE
+## Current best — 2026-07-23 (full top-8, short-context timed decode)
 
-| timed result | decode tok/s | tok/fw | quality / protocol |
-|--------------|-------------:|-------:|--------------------|
-| Mid-window `[t=16]` peak | **~9.5** | up to **~4.0** | full K=8 · `TEMP=0` · warm timed path |
-| Best overall decode | **~8.5–8.6** | up to **~4.0** | full K=8 · high run-to-run variance |
-| S=1 fused baseline | **~6.5–6.9** overall | 1.0 | full K=8 · hot experts ~99% hit |
-| TOPK=1 ceiling check | ~13 overall | 1.0 | **quality reduced; not full top-8** |
+| cell | mid `[t=16]` | overall decode | AL (tok/fw) | expert hit | when |
+|------|-------------:|---------------:|------------:|-----------:|------|
+| **k8maxal2** | 10.50 | **11.12** | 3.37 | 99.9% | 07:23 UTC |
+| k8w16_maxal_seed | 11.27 | **11.17** | 3.46 | ~100% | 12:55 UTC (wave16) |
+| k8w16_maxal_d4 | 11.35 | 11.16 | 3.46 | ~100% | 12:56 UTC |
+| k8idot_union | — | **11.19** | 3.90 | 99.9% | 09:12 UTC |
+| k8push30 | **11.71** | 10.94–10.98 | **4.00** | ~100% | mid-morning / wave16 |
+| t1hot (TOPK=1, **not full-k8**) | 14.69 | 14.06 | 1.0 | 100% | diagnostic only |
 
-**Headline:** the same single DGX Spark progressed from roughly **2.4 tok/s stock** to a **9.5 tok/s timed-window peak** while retaining full top-8 routing. The best overall decode result is **~8.5–8.6 tok/s**; both figures are reported so the peak is not confused with sustained overall throughput.
+### Protocol for the 11.1+ numbers
 
-The 9.5 path combines device-resident fused S=1 decode, multi-S verification, free prompt lookup decoding (PLD), managed KV/GPU MLA, and CACHE_ROUTE residency. It is an experimental local stack—not a claim that stock upstream or CACHE_ROUTE alone delivers 9.5 tok/s.
+- Prompt: ~40 tokens synthetic (`7` lines × 20), `CHAT_TEMPLATE=0`
+- Warm: 48–64 tokens discarded, then timed NGEN=128–160
+- Routing: full top-8 (`experts loaded/token ≈ 600`); `CACHE_ROUTE=1 J=1 M=32`
+- Spec: `FORCE_PLD=1` n-gram drafts (`DRAFT=3`), **MTP off**
+- CUDA: unified + dense + grouped + **GPU MLA** + **CUDA_FUSE** + `CUDA_EXPERT_GB≈70–85` (~64 GB device experts after warm pin)
+- Expert hit after warm pin: **~99.9%**
+
+### Verbatim 11.12 overall
+
+```text
+128 tokens in 11.51s (11.12 tok/s decode) | expert hit rate 99.9% | RSS 11.40 GB | swap 18.6%
+experts loaded/token: 600.0 (per-layer 8.00 across 75; baseline topk=8)
+speculation: 3.37 tokens/forward | MTP acceptance 0%
+CUDA expert tier: 3386 resident experts (64.05 GB)
+PROFILE: expert-disk 0.466s | expert-matmul 0.137s | attention 9.275s | lm_head 0.276s | other 1.361s
+```
+
+### Physics
+
+| bucket (128-tok timed window @ 11.12) | time | share |
+|--------------------------------------|-----:|------:|
+| attention (GPU MLA; includes some fuse drain) | 9.275s | ~81% |
+| expert-disk | 0.466s | ~4% |
+| expert-matmul | 0.137s | ~1% |
+| lm_head + other | ~1.6s | ~14% |
+
+**Bottleneck is MLA**, not experts/disk, once the VRAM expert tier is hot.
+
+---
+
+## Wave16 exclusive re-measure (2026-07-23 12:50–13:03 UTC)
+
+| cell | mid16 | overall | AL |
+|------|------:|--------:|---:|
+| k8maxal2 | 10.53 | 11.09 | 3.37 |
+| k8push30 | 11.59 | 10.98 | 4.00 |
+| k8w16_maxal_seed | 11.27 | **11.17** | 3.46 |
+| k8w16_maxal_d4 | 11.35 | 11.16 | 3.46 |
+| k8w16_push_idot | 10.51 | 10.22 | 4.00 |
+| k8w16_amort | 11.68 | 10.60 | 3.90 |
+| k8w16_serial_hot | 11.61 | 10.51 | 3.90 |
+| k8w16_maxal_gb85 | 10.71 | 10.61 | 3.46 |
+
+No WIN30. Ceiling remains **~11.1–11.2 overall** on this stack.
 
 ---
 
 ## Historical progression
 
-## Tier A — stock routing (CACHE_ROUTE off)
+### Tier A — stock routing (CACHE_ROUTE off)
+- Timed PROFILE: **2.39** tok/s · hit ~82%
+- Chat warm: **~2.08** tok/s
 
-Fair full‑k8 baseline (leaderboard-comparable *routing*).
+### Tier B — CACHE_ROUTE early
+- Chat ladder: **3.33** tok/s · hit 97% · swap 14%
 
-| Cell | decode tok/s | hit | notes |
-|------|-------------:|----:|-------|
-| Timed PROFILE (WARM=160, NGEN=48, greedy) | **2.39** | ~82% | non-interactive |
-| Chat warm (primes, `:reset` each turn) | **~2.08** | ~82% | multi-turn chat |
+### Tier C — fused S=1 + device-tier
+- CR M16 + device-tier: **5.63–6.17** tok/s
+- Multi-S + free PLD historical: mid ~9.5 / overall ~8.5–8.6 (superseded)
 
-Context: public community full-quality peaks on other machines were often **~0.4–2.06** decode (e.g. Metal M5 Max ~2.06 in older README discussion). Different hardware — not apples-to-apples, but useful backdrop.
-
----
-
-## Tier B — experimental CACHE_ROUTE (early stack)
-
-**Config sketch:** CUDA unified + dense/grouped experts + warm session LRU.  
-**Before** fused-device decode (D4) / heavy device-tier.
-
-`CACHE_ROUTE=1 ROUTE_J=2 ROUTE_M=12`
-
-| Cell | decode tok/s | hit | swap | notes |
-|------|-------------:|----:|-----:|-------|
-| Chat ladder best | **3.33** | **97%** | **14%** | multi-turn primes + `:reset` |
-| Timed one-shot | **2.67** | 93.5% | 15% | less favorable than multi-turn chat |
-
-**Routing-side jump people care about:** ~**2.4 → 3.33**.
-
-**Independent x86 repro** (dual 5090 / Gen5, PCIe, not unified memory): true top-8 **2.255** → J2 M12 **3.09** (+42%), hit 92%, swap **15.3%** — matches the GB10 delta and swap rate. Quality: MMLU-200 59% vs 62% (noise; **no detectable difference**). See [QUALITY.md](QUALITY.md). **Not** a main-table row.
-
-Example footer (Tier B peak):
-
-```text
-41 tok · 3.33 decode tok/s · hit 97% · swap 14% · RSS 78.5 GB
-I/O ~1.5s · expert ~3.2s · attention ~4.1s
-```
+### Tier D — current (PLD + GPU MLA + large expert pin)
+- **11.1+ overall full top-8** (see table above)
 
 ---
 
-## Tier C — later stack on the same GB10
+## Goal
 
-Same host, still full K=8. On top of CACHE_ROUTE: local **GPU MLA (D3)**, **fused S=1 decode (D4 / CUDA_FUSE)**, optional **device-tier** hot experts (`CUDA_EXPERT_GB`), **PILOT**, often **M=16**, sometimes **ROUTE_ALPHA=0.5**.
+> **30 decode tok/s on full top-8 (K=8)** without collapsing to TOPK=1.
 
-### These are **not** “CACHE_ROUTE alone”
-
-| Cell | CR | decode tok/s | hit | swap / agree | notes |
-|------|-----|-------------:|----:|--------------|-------|
-| Strict, later stack, CR off | off | **2.98** | 86.2% | — | fair A/B partner |
-| CR M16, same later stack | J2 M16 | **5.14** | 94.0% | swap 19.6% · agree 80.4% | **only CR differs** from row above |
-| CR M16, managed experts | J2 M16 | **5.27** | 96.3% | — | fuse+MLA+pilot |
-| CR M16 + device-tier ~50 GB | J2 M16 | **5.63–5.64** | ~96% | ~19% / ~81% | mid-window higher |
-| CR M16 + device-tier (confirm) | J2 M16 | **6.17** | 96.9% | 18.4% / 81.6% | full 48-tok timed window |
-
-### Takeaways
-
-| Claim | Support |
-|-------|---------|
-| CR alone (early) | **~2.4 → 3.33** chat |
-| CR on/off with later stack fixed | **2.98 → 5.14** |
-| Full later stack + CR peak | **~5.6–6.2** decode |
-| Strict full-k8 without CR | still ~**3** class even with fuse |
-
----
-
-## What we did **not** claim as full-k8 leaderboard
-
-| Trap | Why it’s wrong |
-|------|----------------|
-| **TOPK=1** ~13 tok/s overall as “full quality” | Pruned routing ceiling check — quality trade, not full K=8 |
-| **6 tok/s = CACHE_ROUTE alone** | Needs Tier C CUDA/residency stack |
-| **Overall** wall tok/s | Includes prefill; not the ranking metric |
-| **Default CR** | Experimental; quality gates still limited |
-
----
-
-## iobench (disk)
-
-| Mode | GB/s |
-|------|-----:|
-| Buffered | 4.25 |
-| O_DIRECT | **9.69** |
-
----
-
-## Reproduction sketch
-
-Exact local scripts vary; conceptual cells:
-
-```bash
-# Tier A — stock full-k8
-unset CACHE_ROUTE TOPK
-# ... COLI_CUDA / unified / PIN / warm as on your box ...
-./coli chat   # or timed glm PROFILE / WARM+NGEN cell
-
-# Tier B — experimental CR
-CACHE_ROUTE=1 ROUTE_J=2 ROUTE_M=12 ./coli chat
-
-# Tier C — machine-specific; see local run-glm52-k8*.sh
-# Report every flag if you publish a number.
-```
-
-Always report: **decode tok/s**, **hit%**, **swap%** if CR on, **K width**, **MTP on/off**, **context / warm protocol**.
+Status: **not reached** (~2.7× gap from 11.1). Next lever: MLA speed.

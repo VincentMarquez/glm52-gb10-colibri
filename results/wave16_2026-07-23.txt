@@ -1,0 +1,18 @@
+# Wave16 results — 2026-07-23
+
+Exclusive sequential hit-30 wave on NVIDIA DGX Spark (GB10).
+
+```
+WAVE16_START 2026-07-23T12:50:20+00:00
+RESULT CELL=k8maxal2 mid16=10.53 overall=11.09 al=3.37
+RESULT CELL=k8push30 mid16=11.59 overall=10.98 al=4.00
+RESULT CELL=k8w16_maxal_seed mid16=11.27 overall=11.17 al=3.46
+RESULT CELL=k8w16_maxal_d4 mid16=11.35 overall=11.16 al=3.46
+RESULT CELL=k8w16_push_idot mid16=10.51 overall=10.22 al=4.00
+RESULT CELL=k8w16_amort mid16=11.68 overall=10.60 al=3.90
+RESULT CELL=k8w16_serial_hot mid16=11.61 overall=10.51 al=3.90
+RESULT CELL=k8w16_maxal_gb85 mid16=10.71 overall=10.61 al=3.46
+WAVE16_DONE 2026-07-23T13:03:04+00:00
+```
+
+Campaign best full-k8 overall: **11.12** (k8maxal2) / **11.19** (k8idot_union).
